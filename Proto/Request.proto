@@ -1,0 +1,25 @@
+syntax = "proto3";
+package GolangMongoDBGRPCSimpleCRUD;
+
+import "google/protobuf/any.proto";
+
+option go_package = "GolangMongoDBGRPCSimpleCRUD/Controller/Helper";
+
+message RequestOnAllData {
+  optional int64 Limit = 1;
+  optional int64 Page = 2;
+  optional string Filter = 3;
+  optional string UserID = 4;
+  optional bool IsDeleted = 5;
+}
+
+message ResponseOnAllData {
+  int64 PreviousPage = 1;
+  int64 CurrentPage = 2;
+  int64 NextPage = 3;
+  int64 Limit = 4;
+  int64 Offset = 5;
+  int64 TotalPage = 6;
+  int64 TotalData = 7;
+  repeated google.protobuf.Any Data = 8;
+}

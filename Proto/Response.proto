@@ -1,0 +1,12 @@
+syntax = "proto3";
+package GolangMongoDBGRPCSimpleCRUD;
+
+import "google/protobuf/any.proto";
+
+option go_package = "GolangMongoDBGRPCSimpleCRUD/Controller/Helper";
+
+message Response {
+  int32 StatusCode = 1;
+  string Message = 2;
+  google.protobuf.Any Data = 3;
+}

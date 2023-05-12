@@ -1,0 +1,13 @@
+syntax = "proto3";
+package GolangMongoDBGRPCSimpleCRUD;
+
+option go_package = "GolangMongoDBGRPCSimpleCRUD/Controller";
+
+message DataIdentity {
+  string CreatedBy = 1;
+  string UpdatedBy = 2;
+  string DeletedBy = 3;
+  int64 CreatedAt = 4;
+  int64 UpdatedAt = 5;
+  int64 DeletedAt = 6;
+}

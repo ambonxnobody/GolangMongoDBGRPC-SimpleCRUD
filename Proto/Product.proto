@@ -1,0 +1,32 @@
+syntax = "proto3";
+package GolangMongoDBGRPCSimpleCRUD;
+
+import "DataIdentity.proto";
+import "Request.proto";
+import "Helper.proto";
+import "Response.proto";
+
+option go_package = "GolangMongoDBGRPCSimpleCRUD/Controller";
+
+service ProductController {
+  rpc GetProducts(RequestOnAllData) returns (Response);
+  rpc GetProduct(ID) returns (Response);
+  rpc CreateProduct(Product) returns (Response);
+  rpc UpdateProduct(Product) returns (Response);
+  rpc DeleteProduct(ID) returns (Response);
+  rpc DeleteProductPermanently(ID) returns (Response);
+}
+
+message Product {
+  string ID = 1;
+  string Name = 2;
+  double Price = 3;
+  uint32 Stock = 4;
+  Category Category = 5;
+  DataIdentity DataIdentity = 6;
+}
+
+message Category {
+  string ID = 1;
+  string Name = 2;
+}
