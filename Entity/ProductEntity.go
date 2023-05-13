@@ -8,4 +8,6 @@ type ProductEntity struct {
 	Price      int64              `json:"Price" bson:"Price"`
 	Stock      int64              `json:"Stock" bson:"Stock"`
 	CategoryID string             `json:"CategoryID" bson:"CategoryID"`
+
+	DataIdentity DataIdentityEntity `json:"DataIdentity,omitempty" bson:"DataIdentity,omitempty"`
 }

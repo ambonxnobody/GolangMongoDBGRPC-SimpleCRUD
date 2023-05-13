@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 	"log"
+	"time"
 )
 
 type ProductService struct {
@@ -21,8 +22,8 @@ type ProductService struct {
 	DB *mongo.Client
 }
 
-func (p *ProductService) environment() *mongo.Collection {
-	return p.DB.Database("GogRPC").Collection("Product")
+func (p *ProductService) environment() *mongo.Database {
+	return p.DB.Database("GogRPC")
 }
 
 func (p *ProductService) GetProducts(ctx context.Context, filter *helperPb.RequestOnAllData) (*helperPb.Response, error) {
@@ -34,13 +35,13 @@ func (p *ProductService) GetProducts(ctx context.Context, filter *helperPb.Reque
 	var response helperPb.Response
 
 	if !filter.GetIsDeleted() {
-		dataCount, err = p.environment().CountDocuments(context.TODO(), bson.M{"DeletedAt": bson.M{"$exists": false}})
+		dataCount, err = p.environment().Collection("Product").CountDocuments(context.TODO(), bson.M{"DeletedAt": bson.M{"$exists": false}})
 
-		results, err = p.environment().Find(context.TODO(), bson.M{"DeletedAt": bson.M{"$exists": false}}, options.Find().SetLimit(filter.GetLimit()).SetSkip((filter.GetPage()-1)*filter.GetLimit()))
+		results, err = p.environment().Collection("Product").Find(context.TODO(), bson.M{"DeletedAt": bson.M{"$exists": false}}, options.Find().SetLimit(filter.GetLimit()).SetSkip((filter.GetPage()-1)*filter.GetLimit()))
 	} else {
-		dataCount, err = p.environment().CountDocuments(context.TODO(), bson.M{})
+		dataCount, err = p.environment().Collection("Product").CountDocuments(context.TODO(), bson.M{})
 
-		results, err = p.environment().Find(context.TODO(), bson.M{}, options.Find().SetLimit(filter.GetLimit()).SetSkip((filter.GetPage()-1)*filter.GetLimit()))
+		results, err = p.environment().Collection("Product").Find(context.TODO(), bson.M{}, options.Find().SetLimit(filter.GetLimit()).SetSkip((filter.GetPage()-1)*filter.GetLimit()))
 	}
 
 	if err != nil {
@@ -106,7 +107,7 @@ func (p *ProductService) GetProduct(ctx context.Context, id *helperPb.ID) (*help
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = p.environment().FindOne(context.TODO(), bson.D{{"_id", productID}}).Decode(&product)
+	err = p.environment().Collection("Product").FindOne(context.TODO(), bson.D{{"_id", productID}}).Decode(&product)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -127,17 +128,98 @@ func (p *ProductService) GetProduct(ctx context.Context, id *helperPb.ID) (*help
 }
 
 func (p *ProductService) CreateProduct(ctx context.Context, product *productPb.Product) (*helperPb.Response, error) {
-	return nil, nil
+	var response helperPb.Response
+	var productEntity Entity.ProductEntity
+
+	productEntity.ID = primitive.NewObjectID()
+	productEntity.Name = product.GetName()
+	productEntity.Price = int64(product.GetPrice())
+	productEntity.Stock = int64(product.GetStock())
+	productEntity.CategoryID = product.GetCategory().GetID()
+	productEntity.DataIdentity.CreatedAt = time.Now().Unix()
+
+	_, err := p.environment().Collection("Product").InsertOne(context.Background(), productEntity)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	response.StatusCode = 200
+	response.Message = "Berhasil membuat data produk"
+
+	return &response, nil
 }
 
 func (p *ProductService) UpdateProduct(ctx context.Context, product *productPb.Product) (*helperPb.Response, error) {
-	return nil, nil
+	var response helperPb.Response
+	var productEntity Entity.ProductEntity
+
+	productID, err := primitive.ObjectIDFromHex(product.GetID())
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	productEntity.ID = productID
+	productEntity.Name = product.GetName()
+	productEntity.Price = int64(product.GetPrice())
+	productEntity.Stock = int64(product.GetStock())
+	productEntity.CategoryID = product.GetCategory().GetID()
+	productEntity.DataIdentity.UpdatedAt = time.Now().Unix()
+
+	_, err = p.environment().Collection("Product").UpdateOne(context.Background(), bson.D{{"_id", productID}}, bson.M{"$set": productEntity})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	response.StatusCode = 200
+	response.Message = "Berhasil mengubah data produk"
+
+	return &response, nil
 }
 
 func (p *ProductService) DeleteProduct(ctx context.Context, id *helperPb.ID) (*helperPb.Response, error) {
-	return nil, nil
+	var response helperPb.Response
+	var productEntity Entity.ProductEntity
+
+	productID, err := primitive.ObjectIDFromHex(id.GetID())
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	productEntity.DataIdentity.DeletedAt = time.Now().Unix()
+
+	_, err = p.environment().Collection("Product").UpdateOne(context.Background(), bson.D{{"_id", productID}}, bson.M{"$set": productEntity})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	response.StatusCode = 200
+	response.Message = "Berhasil menghapus data produk"
+
+	return &response, nil
 }
 
 func (p *ProductService) DeleteProductPermanently(ctx context.Context, id *helperPb.ID) (*helperPb.Response, error) {
-	return nil, nil
+	var response helperPb.Response
+
+	productID, err := primitive.ObjectIDFromHex(id.GetID())
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = p.environment().Collection("Product").DeleteOne(context.Background(), bson.D{{"_id", productID}})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	response.StatusCode = 200
+	response.Message = "Berhasil menghapus data produk secara permanen"
+
+	return &response, nil
 }
